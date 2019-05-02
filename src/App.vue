@@ -4,41 +4,45 @@
 
 	<b-container fluid>
 	  <b-row class="text-center">
-      <b-col md="12" class="py-3">
-         <b-button @click="showElements(1)" variant="success">Клиентская база</b-button>
-		 <b-button @click="showElements(2)" variant="warning">Рассылка</b-button>
-		 <b-button variant="primary">История</b-button>
-	 </b-col>
-    </b-row>
+		<b-col md="12" class="py-3">
+			<b-button @click="showElements(1)" variant="success">Клиентская база</b-button>
+			<b-button @click="showElements(2)" variant="warning">Рассылка</b-button>
+			<b-button variant="primary">История</b-button>
+		</b-col>
+	  </b-row>
 
 	<b-row>
 		<b-col>
 			<b-table v-if="showagents" hover bordered
 			:items="users" :fields="fields" >
 						
-			 <template slot="isAdmin" slot-scope="row">
+			<template slot="isAdmin" slot-scope="row">
 	            <b-checkbox v-model="row.item.admin" @input="saveuser(row)" ></b-checkbox>
-			 </template>
+			</template>
 			
 			<template slot="isBlocked" slot-scope="row">
 	            <b-checkbox v-model="row.item.blocked" @input="saveuser(row)" ></b-checkbox>
-			 </template>
+			</template>
 			
+			<template slot="companyName" slot-scope="row">
+	            <b-form-input v-model="row.item.companyName" @input="saveuser(row)" ></b-form-input>
+			</template>
+				
 			</b-table>
 		</b-col>
-		</b-row>
+	</b-row>
 		
-		<b-row v-if="showNotification">
-			<b-col sm="2">
-				<b-form-textarea
-				id="textarea"
-				v-model="textMessage"
-				placeholder="Текст сообщения"
-				rows="3"
-				max-rows="6"></b-form-textarea>
+		<b-row v-if="showNotification" >
+			<b-col md="6" offset-md="3">
+				<b-form-textarea 
+					id="textarea"
+					v-model="textMessage"
+					placeholder="Текст сообщения"
+					rows="3"
+					max-rows="6"></b-form-textarea>
+				<b-button class="m-2" @click="sendmsgall" variant="success" >Отправить</b-button>
 			</b-col>
 		</b-row>
-
 	</b-container>
 	</div>
 </template>
@@ -95,10 +99,7 @@ export default {
   methods:{
 	saveuser(prm){
 		const usr = JSON.stringify(prm.item);
-
-		var params = new URLSearchParams()
-        params.append('usr', usr)
-		
+	
 		axios.post('http://127.0.0.1:8000/rest/updateuser',usr,
 		{
 			headers: {
@@ -112,6 +113,18 @@ export default {
 			console.log(error);
 		});
 	},
+	sendmsgall(){
+		var params = new URLSearchParams()
+        params.append('msg', this.textMessage);
+		axios.post('http://127.0.0.1:8000/rest/sendmessagetoall',params)
+		.then((response) => {
+			alert("Сообщение отправлено!");
+			this.textMessage = "";
+		})
+		.catch((error) => {
+			alert(error);
+		});
+	},
 	loadagents(){
 		axios.get('http://127.0.0.1:8000/rest/getusers')
 		.then(response => {
@@ -123,6 +136,7 @@ export default {
 		this.showNotification = false;
 
 		if(pageNumber == 1){
+			this.loadagents();
 			this.showagents = true;
 		}
 		
@@ -130,7 +144,6 @@ export default {
 			this.showNotification = true;
 		}
 	}
-
   }
   ,
   created(){
