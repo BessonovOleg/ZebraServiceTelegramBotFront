@@ -7,7 +7,7 @@
 		<b-col md="12" class="py-3">
 			<b-button @click="showElements(1)" variant="success">Клиентская база</b-button>
 			<b-button @click="showElements(2)" variant="warning">Рассылка</b-button>
-			<b-button variant="primary">История</b-button>
+			<b-button @click="showElements(3)" variant="primary">История</b-button>
 		</b-col>
 	  </b-row>
 
@@ -32,8 +32,8 @@
 		</b-col>
 	</b-row>
 		
-		<b-row v-if="showNotification" >
-			<b-col md="6" offset-md="3">
+	<b-row v-if="showNotification" >
+		<b-col md="6" offset-md="3">
 				<b-form-textarea 
 					id="textarea"
 					v-model="textMessage"
@@ -41,8 +41,23 @@
 					rows="3"
 					max-rows="6"></b-form-textarea>
 				<b-button class="m-2" @click="sendmsgall" variant="success" >Отправить</b-button>
-			</b-col>
-		</b-row>
+		</b-col>
+	</b-row>
+
+	<b-row v-if="showMessages">
+		<b-col sm="1">
+			<b-button @click="clearHistory" variant="danger">Очистить историю</b-button>
+		</b-col>
+	</b-row>
+	
+	<b-row v-if="showMessages" >
+		<b-col>
+			<b-table hover bordered
+			:items="messages" :fields="fieldsmessages" >
+			</b-table>
+		</b-col>
+	</b-row>
+		
 	</b-container>
 	</div>
 </template>
@@ -57,9 +72,25 @@ export default {
       selected: null,
 	  showagents: false,
 	  showNotification: false,
+	  showMessages: false,
 	  textMessage:"",
 	  users:[],
-	   fields: {
+	  messages:[],
+	  fieldsmessages:{
+		devent:{
+			key: 'dateEvent',
+			label: 'Дата'
+		},
+		uname:{
+			key: 'telegramUser.companyName',
+			label: 'Пользователь'
+		},
+		msg:{
+			key: 'messgaBody',
+			label: 'Сообщение'
+		}
+	  },
+	  fields: {
 	   tcode: {
             key: 'telegramCode',
             label: 'Код Telegram',
@@ -113,6 +144,15 @@ export default {
 			console.log(error);
 		});
 	},
+	clearHistory(){
+		axios.post('http://127.0.0.1:8000/rest/clearhistory')
+		.then((response) => {
+			this.messages = [];
+		})
+		.catch((error) => {
+			alert(error);
+		});
+	},
 	sendmsgall(){
 		var params = new URLSearchParams()
         params.append('msg', this.textMessage);
@@ -131,10 +171,17 @@ export default {
 			this.users = response.data
 		}).catch(e=>{this.msg=e})
 	},
+	loadMessages(){
+		axios.get('http://127.0.0.1:8000/rest/getmessages')
+		.then(response => {
+			this.messages = response.data
+		}).catch(e=>{this.msg=e})
+	},
 	showElements(pageNumber){
 		this.showagents = false;
 		this.showNotification = false;
-
+	    this.showMessages = false;
+		
 		if(pageNumber == 1){
 			this.loadagents();
 			this.showagents = true;
@@ -143,12 +190,20 @@ export default {
 		if(pageNumber == 2){
 			this.showNotification = true;
 		}
+
+		if(pageNumber == 3){
+			this.loadMessages();
+			this.showMessages = true;
+		}
 	}
   }
   ,
   created(){
 	this.loadagents();
   }
+
+  
+  
 }
 </script>
 
